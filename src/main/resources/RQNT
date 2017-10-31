@@ -1,0 +1,9 @@
+RQNT 1825 aaln/S1/SU0/1@c26001.atl0.cisco.com MGCP 0.1 
+N: mgcp.aSCT1CA.atl0.cisco.com:2427 
+X: 50 
+R: L/hu(N),D/[0-9!--*T](D) 
+S: L/dls
+
+	
+200 1825 OK  
+

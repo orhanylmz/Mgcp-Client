@@ -3,6 +3,9 @@ package com.mgcp.transport;
 import java.net.InetAddress;
 import java.util.ArrayList;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
 import com.configuration.GeneralConfiguration;
 import com.mgcp.exceptions.MGCPParseException;
 import com.mgcp.message.MGCPMessage.MgcpParametersEnum;
@@ -17,6 +20,9 @@ import com.mgcp.message.parameter.connectionMode.ConnectionMode.ConnectionModes;
 import com.mgcp.message.parameter.general.EventName;
 import com.mgcp.message.parameter.localConnectionOptions.LocalConnectionOptionsParameterValue;
 import com.mgcp.message.parameter.requestIdentifier.RequestIdentifierParameterValue;
+import com.mgcp.message.parameter.requestedEvents.RequestedEvent;
+import com.mgcp.message.parameter.requestedEvents.RequestedEvents;
+import com.mgcp.message.parameter.requestedEvents.RequestedEventsParameterValue;
 import com.mgcp.message.parameter.signalRequests.EventParameters;
 import com.mgcp.message.parameter.signalRequests.SignalRequest;
 import com.mgcp.message.parameter.signalRequests.SignalRequests;
@@ -24,6 +30,7 @@ import com.mgcp.message.parameter.signalRequests.SignalRequestsParameterValue;
 import com.mgcp.message.response.MGCPResponse;
 import com.noyan.Base;
 import com.noyan.util.NullUtil;
+import com.noyan.util.log.Log;
 
 public class MgcpSession implements Base {
 	private long transactionId = -1;
@@ -35,19 +42,19 @@ public class MgcpSession implements Base {
 
 	public MgcpSession(MgcpSessionInterface mgcpSessionInterface) throws Exception {
 		this.mgcpSessionInterface = mgcpSessionInterface;
-		this.transactionId = MGCPTransportLayer.getMgcpTransportLayer().generateTransactionId();
-		MGCPTransportLayer.getMgcpTransportLayer().addSession(this);
+		this.transactionId = getMgcpTransportLayer().generateTransactionId();
+		getMgcpTransportLayer().addSession(this);
 	}
 
 	public void create() throws Exception {
 		create(null);
 	}
 
-	public void create(String remoteSdp) {
+	public void create(String sdp) {
 		try {
-			String endpointId = MGCPTransportLayer.getMgcpTransportLayer().getIvrEndpointID();
-			InetAddress serverAddress = MGCPTransportLayer.getMgcpTransportLayer().getMediaServerAddress();
-			int serverPort = MGCPTransportLayer.getMgcpTransportLayer().getMediaServerPort();
+			String endpointId = getMgcpTransportLayer().getIvrEndpointID();
+			InetAddress serverAddress = getMgcpTransportLayer().getMediaServerAddress();
+			int serverPort = getMgcpTransportLayer().getMediaServerPort();
 
 			MGCPCommandLine commandLine = new MGCPCommandLine(MGCPVerb.CRCX, transactionId, EndpointName.parse(endpointId + "@" + serverAddress.getHostAddress() + ":" + serverPort));
 
@@ -56,11 +63,12 @@ public class MgcpSession implements Base {
 			commandCRCX.addParameter(LocalConnectionOptionsParameterValue.generate(20, "PCMU", "PCMA"));
 			commandCRCX.addParameter(ConnectionModeParameterValue.generate(ConnectionModes.sendrecv));
 
-			if (NullUtil.isNotNull(remoteSdp)) {
-				commandCRCX.setSdpInformation(GeneralConfiguration.remoteSDP);
+			if (NullUtil.isNotNull(sdp)) {
+				commandCRCX.setSdpInformation(sdp);
 			}
 
 			send(commandCRCX);
+			info("Sended CRCX command");
 		} catch (Exception e) {
 			mgcpSessionInterface.processException(e);
 		}
@@ -68,86 +76,107 @@ public class MgcpSession implements Base {
 
 	public void request() {
 		try {
-			if(talks.isEmpty()){
+			if (talks.isEmpty()) {
 				mgcpSessionInterface.processException(new Exception("Transaction is not started"));
 				return;
 			}
-			
-			MGCPCommandLine commandLine = new MGCPCommandLine(MGCPVerb.RQNT, getTransactionId(), EndpointName.parse(getTalks().get(0).getMgcpResponse().getSpecificEndpointId().getValue().toString() + ":" + MGCPTransportLayer.getMgcpTransportLayer().getMediaServerPort()));
 
-			MGCPCommand commandRQNT = new MGCPCommand(commandLine);
-			commandRQNT.addParameter(getSpecificEndpointId());
-			commandRQNT.addParameter(getCallId());
-			commandRQNT.addParameter(getConnectionId());
+			MGCPCommand commandRQNT = generateCommandFromSession(MGCPVerb.RQNT);
+
 			commandRQNT.addParameter(RequestIdentifierParameterValue.generate());
 			commandRQNT.addParameter(new MGCPParameter(new SignalRequestsParameterValue(new SignalRequests(new SignalRequest(new EventName("AU", "pa"), EventParameters.parse("an=file:C:\\temp\\b.wav,it=1"))))));
 
 			send(commandRQNT);
+			info("Sended RQNT command");
 		} catch (Exception e) {
 			mgcpSessionInterface.processException(e);
 		}
+	}
+
+	public void modify() {
+		modify(null);
 	}
 
 	public void modify(String sdp) {
 		try {
-			// FODO: FIX ME
+			if (talks.isEmpty()) {
+				mgcpSessionInterface.processException(new Exception("Transaction is not started"));
+				return;
+			}
+
+			MGCPCommand commandMDCX = generateCommandFromSession(MGCPVerb.MDCX);
+
+			commandMDCX.addParameter(RequestIdentifierParameterValue.generate());
+			commandMDCX.addParameter(ConnectionModeParameterValue.generate(ConnectionModes.sendrecv));
+			commandMDCX.addParameter(new MGCPParameter(new SignalRequestsParameterValue(new SignalRequests(new SignalRequest(new EventName("G", "rt"))))));
+			commandMDCX.addParameter(new MGCPParameter(new RequestedEventsParameterValue(new RequestedEvents(new RequestedEvent(new EventName("L", "hu"))))));
+
+			if (NullUtil.isNotNull(sdp)) {
+				commandMDCX.setSdpInformation(sdp);
+			}
+
+			send(commandMDCX);
+			info("Sended MDCX command");
 		} catch (Exception e) {
 			mgcpSessionInterface.processException(e);
 		}
 	}
 
+	public void delete() {
+		try {
+			if (talks.isEmpty()) {
+				mgcpSessionInterface.processException(new Exception("Transaction is not started"));
+				return;
+			}
+
+			MGCPCommand commandDLCX = generateCommandFromSession(MGCPVerb.DLCX);
+
+			send(commandDLCX);
+			info("Sended DLCX command");
+		} catch (Exception e) {
+			mgcpSessionInterface.processException(e);
+		}
+	}
+
+	private MGCPCommand generateCommandFromSession(MGCPVerb verb) throws Exception {
+		MGCPCommandLine commandLine = new MGCPCommandLine(verb, getTransactionId(), EndpointName.parse(getSpecificEndpointId().getParameterValue().getValue().toString() + ":" + getMgcpTransportLayer().getMediaServerPort()));
+
+		MGCPCommand command = new MGCPCommand(commandLine);
+		command.addParameter(getSpecificEndpointId());
+		command.addParameter(getCallId());
+		command.addParameter(getConnectionId());
+		return command;
+	}
+
 	public void send(MGCPCommand mgcpCommand) throws Exception {
 		if (NullUtil.isNotNull(mgcpTalk)) {
-			throw new Exception("mgcpTalk must be null for send new command");
+			throw new Exception(getPrefix() + "New message can not be sent without receiving answer");
 		}
 
 		mgcpTalk = new MGCPTalk(mgcpCommand);
 
-		MGCPTransportLayer.getMgcpTransportLayer().send(mgcpCommand);
-		trace("Sended Message:\n" + mgcpCommand.toString());
+		getMgcpTransportLayer().send(mgcpCommand);
 	}
 
 	public void receive(MGCPResponse mgcpResponse) throws Exception {
 		if (NullUtil.isNull(mgcpTalk)) {
-			throw new Exception("currentCommand must be notnull for receive new response");
+			throw new Exception(getPrefix() + "New message can not be receive without sending message");
 		}
 
 		mgcpTalk.setMgcpResponse(mgcpResponse);
 		talks.add(mgcpTalk);
 		mgcpTalk = null;
 
-		trace("Received Message:\n" + mgcpResponse.toString());
+		info("Code detail: " + getMgcpTransportLayer().getResponseCodeDetail(mgcpResponse.getResponseLine().getResponseCode()));
 		mgcpSessionInterface.processReceiveMessage(mgcpResponse);
-	}
-
-	public MGCPCommand getCurrentCommand() {
-		if (NullUtil.isNull(mgcpTalk)) {
-			return null;
-		}
-
-		return mgcpTalk.getMgcpCommand();
-	}
-
-	public MGCPTalk getLastMgcpTalk() {
-		if (NullUtil.isNull(talks)) {
-			return null;
-		}
-
-		for (int i = (talks.size() - 1); i >= 0; i--) {
-			if (talks.get(i).isCompleted()) {
-				return talks.get(i);
-			}
-		}
-
-		return null;
-	}
-
-	public long getTransactionId() {
-		return transactionId;
 	}
 
 	public ArrayList<MGCPTalk> getTalks() {
 		return talks;
+	}
+
+	public long getTransactionId() {
+		return transactionId;
 	}
 
 	public MGCPParameter getCallId() throws MGCPParseException {
@@ -179,9 +208,18 @@ public class MgcpSession implements Base {
 		return talks.get(0).getMgcpCommand().getParameter(mgcpParametersEnum);
 	}
 
+	private MGCPTransportLayer getMgcpTransportLayer() throws Exception {
+		return MGCPTransportLayer.getMgcpTransportLayer();
+	}
+
+	@Override
+	public String getPrefix() {
+		return "MgcpSession [TransactionId:" + getTransactionId() + "] -> ";
+	}
+
 	@Override
 	public String toString() {
-		StringBuilder builder = new StringBuilder("TransactionId: " + transactionId);
+		StringBuilder builder = new StringBuilder(getPrefix());
 		for (int i = 0; i < talks.size(); i++) {
 			builder.append(talks.get(i).toString());
 		}
@@ -189,8 +227,44 @@ public class MgcpSession implements Base {
 		return builder.toString();
 	}
 
-	@Override
-	public String getPrefix() {
-		return "MgcpSession";
+	public static void main(String[] args) throws Exception {
+		Logger.getRootLogger().setLevel(Level.ALL);
+		Logger.getRootLogger().addAppender(Log.createConsoleAppender(null));
+
+		MGCPTransportLayer.createAndStartMgcpTransportLayer(GeneralConfiguration.localPort);
+
+		MGCPTransportLayer.getMgcpTransportLayer().setMediaServerAddress(InetAddress.getByName(GeneralConfiguration.mediaServerAddress));
+		MGCPTransportLayer.getMgcpTransportLayer().setMediaServerPort(GeneralConfiguration.mediaServerPort);
+		MGCPTransportLayer.getMgcpTransportLayer().setIvrEndpointID(GeneralConfiguration.ivrEndpointID);
+
+		MgcpSessionInterface mgcpSessionInterface = new MgcpSessionInterface() {
+			@Override
+			public void processException(Exception exception) {
+				exception.printStackTrace();
+			}
+
+			@Override
+			public void onSuccess(MGCPResponse mgcpResponse) {
+				System.out.println("SUCCESS");
+
+			}
+
+			@Override
+			public void onError(MGCPResponse mgcpResponse) {
+				System.out.println("ERROR");
+			}
+		};
+
+		MgcpSession mgcpSession = new MgcpSession(mgcpSessionInterface);
+
+		mgcpSession.create();
+		Thread.sleep(5000);
+		// mgcpSession.delete();
+		mgcpSession.modify();
+		;
+		// Thread.sleep(5000);
+		// mgcpSession.request();
+		Thread.sleep(5000);
+		mgcpSession.delete();
 	}
 }

@@ -6,6 +6,7 @@ import java.util.Properties;
 
 import com.configuration.GeneralConfiguration;
 import com.mgcp.message.command.MGCPCommand;
+import com.mgcp.message.response.responseCode.ResponseCodeDetails;
 import com.noyan.Base;
 import com.noyan.network.socket.ServerSocketAdapter;
 import com.noyan.network.socket.udp.UdpServerSocket;
@@ -14,6 +15,7 @@ import com.noyan.util.NullUtil;
 public class MGCPTransportLayer implements Base, ServerSocketAdapter {
 	private static MGCPTransportLayer mgcpTransportLayer;
 	private UdpServerSocket serverSocket;
+	private ResponseCodeDetails responseCodeDetails;
 
 	private InetAddress mediaServerAddress;
 	private int mediaServerPort;
@@ -28,6 +30,7 @@ public class MGCPTransportLayer implements Base, ServerSocketAdapter {
 
 	public MGCPTransportLayer(InetAddress localAddress, int localPort) throws Exception {
 		serverSocket = new UdpServerSocket(this, localAddress, localPort);
+		responseCodeDetails = new ResponseCodeDetails();
 	}
 
 	public MgcpSession getSession(long transactionId) {
@@ -130,6 +133,10 @@ public class MGCPTransportLayer implements Base, ServerSocketAdapter {
 		}
 
 		return lastGeneratedTransactionId;
+	}
+
+	public String getResponseCodeDetail(String responseCode) {
+		return responseCodeDetails.getCodeDetail(responseCode);
 	}
 
 	@Override

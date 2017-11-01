@@ -6,10 +6,8 @@ import java.util.Arrays;
 import com.configuration.Constants;
 import com.mgcp.exceptions.MGCPParseException;
 import com.mgcp.message.MGCPMessage;
-import com.mgcp.message.command.MGCPCommand;
 import com.mgcp.message.parameter.MGCPParameter;
 import com.mgcp.message.response.responseLine.MGCPResponseLine;
-import com.noyan.util.LogUtil;
 import com.noyan.util.NullUtil;
 
 public class MGCPResponse extends MGCPMessage {
@@ -65,7 +63,6 @@ public class MGCPResponse extends MGCPMessage {
 		if (NullUtil.isNull(text)) {
 			throw new MGCPParseException("text can not be null");
 		}
-		long beginDate = System.currentTimeMillis();
 
 		text = text.trim();
 		String sdpInformation = null;
@@ -80,7 +77,6 @@ public class MGCPResponse extends MGCPMessage {
 		MGCPResponseLine responseLine = MGCPResponseLine.parse(parts[0]);
 
 		if (parts.length < 2) {
-			LogUtil.logMessage(MGCPCommand.class, "Parsed MGCPResponse Duration: " + (System.currentTimeMillis() - beginDate) + " ms");
 			return new MGCPResponse(responseLine, sdpInformation);
 		}
 
@@ -90,7 +86,6 @@ public class MGCPResponse extends MGCPMessage {
 			mgcpParameters.add(mgcpParameter);
 		}
 
-		LogUtil.logMessage(MGCPCommand.class, "Parsed MGCPResponse Duration: " + (System.currentTimeMillis() - beginDate) + " ms");
 		return new MGCPResponse(responseLine, sdpInformation, mgcpParameters);
 	}
 

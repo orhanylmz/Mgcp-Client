@@ -34,21 +34,4 @@ package com.mgcp.endpoints;
  *
  */
 public class DigitalChannel implements BaseEndpoint {
-
-	public static void main(String[] args) {
-		StringBuilder ön = new StringBuilder();
-		StringBuilder arka = new StringBuilder();
-
-		int sayfaSayisi = 0;
-		for (int i = 1; i < 211; i = i + 4) {
-			ön.append("," + i + "-" + (i + 1));
-			arka.append("," + (i + 2) + "-" + (i + 3));
-			sayfaSayisi++;
-		}
-
-		System.out.println("ÖN: " + ön.toString());
-		System.out.println("\nARKA: " + arka.toString());
-		System.out.println("\nsayfa: " + sayfaSayisi);
-	}
-
 }

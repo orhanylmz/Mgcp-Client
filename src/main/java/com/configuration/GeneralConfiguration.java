@@ -70,7 +70,7 @@ public class GeneralConfiguration {
 	public static int waitingCommandTimeout = 60 * 60 * 1000;
 	
 	
-	public static String mediaServerAddress = "192.168.1.107";
+	public static String mediaServerAddress = "192.168.1.103";
 	public static int mediaServerPort = 2427;
 	public static String localAddress = "192.168.1.103";
 	public static int localPort = 2727;

@@ -74,7 +74,7 @@ public class MgcpSession implements Base {
 		}
 	}
 
-	public void request() {
+	public void request(String filePath) {
 		try {
 			if (talks.isEmpty()) {
 				mgcpSessionInterface.processException(new Exception("Transaction is not started"));
@@ -84,7 +84,7 @@ public class MgcpSession implements Base {
 			MGCPCommand commandRQNT = generateCommandFromSession(MGCPVerb.RQNT);
 
 			commandRQNT.addParameter(RequestIdentifierParameterValue.generate());
-			commandRQNT.addParameter(new MGCPParameter(new SignalRequestsParameterValue(new SignalRequests(new SignalRequest(new EventName("AU", "pa"), EventParameters.parse("an=file:C:\\temp\\b.wav,it=1"))))));
+			commandRQNT.addParameter(new MGCPParameter(new SignalRequestsParameterValue(new SignalRequests(new SignalRequest(new EventName("AU", "pa"), EventParameters.parse("an=file:" + filePath))))));
 
 			send(commandRQNT);
 			info("Sended RQNT command");
@@ -263,7 +263,7 @@ public class MgcpSession implements Base {
 		mgcpSession.modify();
 		;
 		// Thread.sleep(5000);
-		// mgcpSession.request();
+		// mgcpSession.request("C:\\temp\\b.wav,it=1"");
 		Thread.sleep(5000);
 		mgcpSession.delete();
 	}

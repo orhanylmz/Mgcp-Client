@@ -68,9 +68,8 @@ public class GeneralConfiguration {
 
 	public static int waitingResponseTimeout = 5000;
 	public static int waitingCommandTimeout = 60 * 60 * 1000;
-	
-	
-	public static String mediaServerAddress = "192.168.1.103";
+
+	public static String mediaServerAddress = "192.168.1.104";
 	public static int mediaServerPort = 2427;
 	public static String localAddress = "192.168.1.103";
 	public static int localPort = 2727;
@@ -79,9 +78,10 @@ public class GeneralConfiguration {
 
 	// Time
 	public static int messageTimeout = 2000;
-	
-	public static int maxTransactionId= 999999999;
 
-	public static String remoteSDP = "v=0\r\n" + "o=1002 559 930 IN IP4 " + localAddress + "\r\n" + "s=mizudroid\r\n" + "c=IN IP4 " + localAddress + "\r\n" + "t=0 0\r\n" + "m=audio 17970 RTP/AVP 105 0 97 3 101\r\n" + "a=rtpmap:105 speex/16000\r\n" + "a=fmtp:105 mode=8;mode=any\r\n"
-			+ "a=rtpmap:0 PCMU/8000\r\n" + "a=rtpmap:97 iLBC/8000\r\n" + "a=fmtp:97 mode=30\r\n" + "a=rtpmap:101 telephone-event/8000\r\n" + "a=fmtp:101 0-16\r\n" + "a=sendrecv";
+	public static int maxTransactionId = 999999999;
+
+	public static String remoteSDP = "v=0\r\n" + "o=1002 559 930 IN IP4 " + localAddress + "\r\n" + "s=mizudroid\r\n" + "c=IN IP4 " + localAddress + "\r\n" + "t=0 0\r\n" + "m=audio 17970 RTP/AVP 105 0 97 3 101\r\n" + "a=rtpmap:105 speex/16000\r\n" + "a=fmtp:105 mode=8;mode=any\r\n" + "a=rtpmap:0 PCMU/8000\r\n" + "a=rtpmap:97 iLBC/8000\r\n" + "a=fmtp:97 mode=30\r\n" + "a=rtpmap:101 telephone-event/8000\r\n" + "a=fmtp:101 0-16\r\n" + "a=sendrecv";
+
+	public static String remoteSDP2 = "v=0\r\n" + "o=1002 615 75 IN IP4 192.168.1.101\r\n" + "s=mizudroid\r\n" + "c=IN IP4 192.168.1.101\r\n" + "t=0 0\r\n" + "m=audio 17970 RTP/AVP 0 101\r\n" + "a=rtpmap:0 PCMU/8000\r\n" + "a=rtpmap:101 telephone-event/8000\r\n" + "a=fmtp:101 0-16\r\n" + "a=sendrecv";
 }

@@ -163,12 +163,14 @@ public class MgcpSession implements Base {
 			throw new Exception(getPrefix() + "New message can not be receive without sending message");
 		}
 
+		MGCPVerb verb = mgcpTalk.getMgcpCommand().getCommandLine().getMgcpVerb();
+
 		mgcpTalk.setMgcpResponse(mgcpResponse);
 		talks.add(mgcpTalk);
 		mgcpTalk = null;
 
 		info("Code detail: " + getMgcpTransportLayer().getResponseCodeDetail(mgcpResponse.getResponseLine().getResponseCode()));
-		mgcpSessionInterface.processReceiveMessage(mgcpResponse);
+		mgcpSessionInterface.processReceiveMessage(mgcpResponse, verb);
 	}
 
 	public ArrayList<MGCPTalk> getTalks() {
@@ -228,7 +230,7 @@ public class MgcpSession implements Base {
 	}
 
 	public static void main(String[] args) throws Exception {
-		Logger.getRootLogger().setLevel(Level.ALL);
+		Logger.getRootLogger().setLevel(Level.OFF);
 		Logger.getRootLogger().addAppender(Log.createConsoleAppender(null));
 
 		MGCPTransportLayer.createAndStartMgcpTransportLayer(GeneralConfiguration.localPort);
@@ -244,14 +246,14 @@ public class MgcpSession implements Base {
 			}
 
 			@Override
-			public void onSuccess(MGCPResponse mgcpResponse) {
-				System.out.println("SUCCESS");
-
+			public void onSuccess(MGCPResponse mgcpResponse, MGCPVerb verb) {
+				System.out.println(verb + " SUCCESS");
 			}
 
 			@Override
-			public void onError(MGCPResponse mgcpResponse) {
-				System.out.println("ERROR");
+			public void onError(MGCPResponse mgcpResponse, MGCPVerb verb) {
+				System.out.println(verb + " ERROR");
+
 			}
 		};
 

@@ -5,6 +5,7 @@ import com.mgcp.message.parameter.general.EventName;
 import com.noyan.util.NullUtil;
 
 public class SignalRequest {
+	//TODO: FIX ME for event packages
 	private EventName eventName;
 	private EventParameters eventParameters;
 

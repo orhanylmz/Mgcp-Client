@@ -2,11 +2,18 @@ package com.mgcp.transport;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import com.configuration.GeneralConfiguration;
+import com.mgcp.eventpackages.au.AdvancedAudioPackage;
+import com.mgcp.eventpackages.au.signal.PlayCollect;
+import com.mgcp.eventpackages.parameters.InitialPrompt;
+import com.mgcp.eventpackages.parameters.RePrompt;
 import com.mgcp.exceptions.MGCPParseException;
 import com.mgcp.message.MGCPMessage.MgcpParametersEnum;
 import com.mgcp.message.command.MGCPCommand;
@@ -23,7 +30,6 @@ import com.mgcp.message.parameter.requestIdentifier.RequestIdentifierParameterVa
 import com.mgcp.message.parameter.requestedEvents.RequestedEvent;
 import com.mgcp.message.parameter.requestedEvents.RequestedEvents;
 import com.mgcp.message.parameter.requestedEvents.RequestedEventsParameterValue;
-import com.mgcp.message.parameter.signalRequests.EventParameters;
 import com.mgcp.message.parameter.signalRequests.SignalRequest;
 import com.mgcp.message.parameter.signalRequests.SignalRequests;
 import com.mgcp.message.parameter.signalRequests.SignalRequestsParameterValue;
@@ -74,17 +80,33 @@ public class MgcpSession implements Base {
 		}
 	}
 
-	public void request(String filePath) {
+	public void request(String... filePaths) {
 		try {
 			if (talks.isEmpty()) {
 				mgcpSessionInterface.processException(new Exception("Transaction is not started"));
 				return;
 			}
 
-			MGCPCommand commandRQNT = generateCommandFromSession(MGCPVerb.RQNT);
+			if (NullUtil.isNull(filePaths)) {
+				mgcpSessionInterface.processException(new Exception("filePaths can not be null"));
+				return;
+			}
 
+			List<String> filePathList = Arrays.asList(filePaths);
+			String initialPrompt = filePathList.stream().map(path -> "file:" + path).collect(Collectors.joining(","));
+
+			AdvancedAudioPackage advancedAudioPackage = AdvancedAudioPackage.generatePlayCollectAU();
+			PlayCollect playCollect = (PlayCollect) advancedAudioPackage.getSignal();
+			playCollect.setInitialPrompt(new InitialPrompt(initialPrompt));
+
+			if (filePathList.size() > 1) {
+				String rePrompt = initialPrompt.substring(initialPrompt.indexOf(",") + 1);
+				playCollect.setReprompt(new RePrompt(rePrompt));
+			}
+			
+			MGCPCommand commandRQNT = generateCommandFromSession(MGCPVerb.RQNT);
 			commandRQNT.addParameter(RequestIdentifierParameterValue.generate());
-			commandRQNT.addParameter(new MGCPParameter(new SignalRequestsParameterValue(new SignalRequests(new SignalRequest(new EventName("AU", "pa"), EventParameters.parse("an=file:" + filePath))))));
+			commandRQNT.addParameter(new MGCPParameter(new SignalRequestsParameterValue(new SignalRequests(SignalRequest.parse(advancedAudioPackage.toString())))));
 
 			send(commandRQNT);
 			info("Sended RQNT command");
@@ -259,14 +281,15 @@ public class MgcpSession implements Base {
 
 		MgcpSession mgcpSession = new MgcpSession(mgcpSessionInterface);
 
-		mgcpSession.create();
+		mgcpSession.create(GeneralConfiguration.remoteSDP);
 		Thread.sleep(5000);
 		// mgcpSession.delete();
-		mgcpSession.modify();
-		;
+		// mgcpSession.modify();
 		// Thread.sleep(5000);
-		// mgcpSession.request("C:\\temp\\b.wav,it=1"");
-		Thread.sleep(5000);
-		mgcpSession.delete();
+		// mgcpSession.request("C:\\temp\\b.wav,it=1");
+		// mgcpSession.request("C:\\temp\\b.wav");
+		mgcpSession.request("C:\\temp\\b.wav", "C:\\temp\\d.wav", "C:\\temp\\c.wav");
+		// Thread.sleep(5000);
+//		 mgcpSession.delete();
 	}
 }

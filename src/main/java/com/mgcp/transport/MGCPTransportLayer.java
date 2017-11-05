@@ -65,6 +65,9 @@ public class MGCPTransportLayer implements Base, ServerSocketAdapter {
 
 		String domainName = mgcpCommand.getCommandLine().getEndpointName().getDomainName().getDomainName();
 		int port = mgcpCommand.getCommandLine().getEndpointName().getPort();
+		if (port <= 0) {
+			port = getMediaServerPort();
+		}
 
 		serverSocket.send(commandBytes, InetAddress.getByName(domainName), port);
 		trace("Sended ->\n" + mgcpCommand.toString());

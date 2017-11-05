@@ -133,17 +133,17 @@ public class MgcpSession implements Base {
 	}
 
 	public void modify() {
-		modify(null, null);
+		modify(null);
 	}
 
-	public void modify(String sdp, EndpointName endpointName) {
+	public void modify(String sdp) {
 		try {
 			if (talks.isEmpty()) {
 				mgcpSessionInterface.processException(new Exception("Transaction is not started"));
 				return;
 			}
 
-			MGCPCommand commandMDCX = generateCommandFromSession(MGCPVerb.MDCX, endpointName);
+			MGCPCommand commandMDCX = generateCommandFromSession(MGCPVerb.MDCX);
 
 			commandMDCX.addParameter(RequestIdentifierParameterValue.generate());
 			commandMDCX.addParameter(ConnectionModeParameterValue.generate(ConnectionModes.sendrecv));
@@ -177,15 +177,15 @@ public class MgcpSession implements Base {
 		}
 	}
 
-	private MGCPCommand generateCommandFromSession(MGCPVerb verb) throws Exception {
-		return generateCommandFromSession(verb, null);
-	}
+//	private MGCPCommand generateCommandFromSession(MGCPVerb verb) throws Exception {
+//		return generateCommandFromSession(verb, null);
+//	}
 
-	private MGCPCommand generateCommandFromSession(MGCPVerb verb, EndpointName endpointName) throws Exception {
-		if (NullUtil.isNull(endpointName)) {
-			endpointName = EndpointName.parse(getSpecificEndpointId().getParameterValue().getValue().toString() + ":" + getMgcpTransportLayer().getMediaServerPort());
-		}
-		MGCPCommandLine commandLine = new MGCPCommandLine(verb, getTransactionId(), endpointName);
+	private MGCPCommand generateCommandFromSession(MGCPVerb verb) throws Exception {
+//		if (NullUtil.isNull(endpointName)) {
+//			endpointName = EndpointName.parse(getSpecificEndpointId().getParameterValue().getValue().toString() + ":" + getMgcpTransportLayer().getMediaServerPort());
+//		}
+		MGCPCommandLine commandLine = new MGCPCommandLine(verb, getTransactionId(), getSpecificEndpointName());
 
 		MGCPCommand command = new MGCPCommand(commandLine);
 		command.addParameter(getSpecificEndpointId());
@@ -324,7 +324,7 @@ public class MgcpSession implements Base {
 		// mgcpSession.getTalks().get(0).getMgcpResponse().getSpecificEndpointId().getValue().toString()
 		// + "#####");
 		Thread.sleep(5000);
-		mgcpSession2.modify(GeneralConfiguration.remoteSDP2, endpointName);
+		mgcpSession2.modify(GeneralConfiguration.remoteSDP2);
 		Thread.sleep(5000);
 
 		// mgcpSession.delete();

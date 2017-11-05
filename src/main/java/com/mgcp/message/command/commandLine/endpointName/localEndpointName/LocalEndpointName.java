@@ -58,4 +58,8 @@ public class LocalEndpointName {
 
 		return new LocalEndpointName(localNameParts);
 	}
+
+	public enum Endpoint {
+		IVR, CONFERENCE, BRIDGE
+	}
 }

@@ -20,6 +20,7 @@ import com.mgcp.message.command.MGCPCommand;
 import com.mgcp.message.command.commandLine.MGCPCommandLine;
 import com.mgcp.message.command.commandLine.MGCPCommandLine.MGCPVerb;
 import com.mgcp.message.command.commandLine.endpointName.EndpointName;
+import com.mgcp.message.command.commandLine.endpointName.localEndpointName.LocalEndpointName.Endpoint;
 import com.mgcp.message.parameter.MGCPParameter;
 import com.mgcp.message.parameter.callId.CallIdParameterValue;
 import com.mgcp.message.parameter.connectionMode.ConnectionModeParameterValue;
@@ -52,17 +53,35 @@ public class MgcpSession implements Base {
 		getMgcpTransportLayer().addSession(this);
 	}
 
-	public void create() throws Exception {
-		create(null);
+	public void createIVR(String sdp) {
+		create(sdp, Endpoint.IVR);
 	}
 
-	public void create(String sdp) {
-		try {
-			String endpointId = getMgcpTransportLayer().getIvrEndpointID();
-			InetAddress serverAddress = getMgcpTransportLayer().getMediaServerAddress();
-			int serverPort = getMgcpTransportLayer().getMediaServerPort();
+	public void createBRIDGE() {
+		create(null, Endpoint.BRIDGE);
+	}
 
-			MGCPCommandLine commandLine = new MGCPCommandLine(MGCPVerb.CRCX, transactionId, EndpointName.parse(endpointId + "@" + serverAddress.getHostAddress() + ":" + serverPort));
+	public void createBRIDGE(String sdp) {
+		create(sdp, Endpoint.BRIDGE);
+	}
+
+	public void createCONFERENCE() {
+		create(null, Endpoint.CONFERENCE);
+	}
+
+	public void createCONFERENCE(String sdp) {
+		create(sdp, Endpoint.CONFERENCE);
+	}
+
+	public void create(String sdp, Endpoint endpoint) {
+		try {
+			String endpointId = getMgcpTransportLayer().getEndpointID(endpoint);
+			if (NullUtil.isNull(endpointId)) {
+				fatal("Endpoint not found for " + endpoint);
+				return;
+			}
+
+			MGCPCommandLine commandLine = new MGCPCommandLine(MGCPVerb.CRCX, transactionId, EndpointName.parse(endpointId + "@" + getMgcpTransportLayer().getMediaServerAddressWithPort()));
 
 			MGCPCommand commandCRCX = new MGCPCommand(commandLine);
 			commandCRCX.addParameter(CallIdParameterValue.generate());
@@ -103,7 +122,7 @@ public class MgcpSession implements Base {
 				String rePrompt = initialPrompt.substring(initialPrompt.indexOf(",") + 1);
 				playCollect.setReprompt(new RePrompt(rePrompt));
 			}
-			
+
 			MGCPCommand commandRQNT = generateCommandFromSession(MGCPVerb.RQNT);
 			commandRQNT.addParameter(RequestIdentifierParameterValue.generate());
 			commandRQNT.addParameter(new MGCPParameter(new SignalRequestsParameterValue(new SignalRequests(SignalRequest.parse(advancedAudioPackage.toString())))));
@@ -260,6 +279,8 @@ public class MgcpSession implements Base {
 		MGCPTransportLayer.getMgcpTransportLayer().setMediaServerAddress(InetAddress.getByName(GeneralConfiguration.mediaServerAddress));
 		MGCPTransportLayer.getMgcpTransportLayer().setMediaServerPort(GeneralConfiguration.mediaServerPort);
 		MGCPTransportLayer.getMgcpTransportLayer().setIvrEndpointID(GeneralConfiguration.ivrEndpointID);
+		MGCPTransportLayer.getMgcpTransportLayer().setConferenceEndpointID(GeneralConfiguration.conferenceEndpointID);
+		MGCPTransportLayer.getMgcpTransportLayer().setBridgeEndpointID(GeneralConfiguration.bridgeEndpointID);
 
 		MgcpSessionInterface mgcpSessionInterface = new MgcpSessionInterface() {
 			@Override
@@ -281,15 +302,27 @@ public class MgcpSession implements Base {
 
 		MgcpSession mgcpSession = new MgcpSession(mgcpSessionInterface);
 
-		mgcpSession.create(GeneralConfiguration.remoteSDP);
+		// mgcpSession.create(GeneralConfiguration.remoteSDP, Endpoint.BRIDGE);
+		mgcpSession.createBRIDGE();
 		Thread.sleep(5000);
+		MgcpSession mgcpSession2 = new MgcpSession(mgcpSessionInterface);
+		mgcpSession2.createBRIDGE(mgcpSession.getTalks().get(0).getMgcpResponse().getSdpInformation());
+		Thread.sleep(5000);
+		mgcpSession.modify(mgcpSession2.getTalks().get(0).getMgcpResponse().getSdpInformation());
+		Thread.sleep(5000);
+		
+		System.out.println("session01----------------------------------------------------");
+		System.out.println(mgcpSession);
+		System.out.println("session02----------------------------------------------------");
+		System.out.println(mgcpSession2);
 		// mgcpSession.delete();
 		// mgcpSession.modify();
 		// Thread.sleep(5000);
 		// mgcpSession.request("C:\\temp\\b.wav,it=1");
-		// mgcpSession.request("C:\\temp\\b.wav");
-		mgcpSession.request("C:\\temp\\b.wav", "C:\\temp\\d.wav", "C:\\temp\\c.wav");
+//		mgcpSession.request("C:\\temp\\b.wav");
+		// mgcpSession.request("C:\\temp\\b.wav", "C:\\temp\\d.wav",
+		// "C:\\temp\\c.wav");
 		// Thread.sleep(5000);
-//		 mgcpSession.delete();
+		// mgcpSession.delete();
 	}
 }

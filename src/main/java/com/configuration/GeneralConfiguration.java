@@ -71,10 +71,12 @@ public class GeneralConfiguration {
 
 	public static String mediaServerAddress = "192.168.1.104";
 	public static int mediaServerPort = 2427;
-	public static String localAddress = "192.168.1.103";
+	public static String localAddress = "192.168.1.104";
 	public static int localPort = 2727;
 
 	public static String ivrEndpointID = "mobicents/ivr/$";
+	public static String bridgeEndpointID = "mobicents/bridge/$";
+	public static String conferenceEndpointID = "mobicents/cnf/$";
 
 	// Time
 	public static int messageTimeout = 2000;

@@ -6,6 +6,7 @@ import java.util.Properties;
 
 import com.configuration.GeneralConfiguration;
 import com.mgcp.message.command.MGCPCommand;
+import com.mgcp.message.command.commandLine.endpointName.localEndpointName.LocalEndpointName.Endpoint;
 import com.mgcp.message.response.responseCode.ResponseCodeDetails;
 import com.noyan.Base;
 import com.noyan.network.socket.ServerSocketAdapter;
@@ -20,6 +21,8 @@ public class MGCPTransportLayer implements Base, ServerSocketAdapter {
 	private InetAddress mediaServerAddress;
 	private int mediaServerPort;
 	private String ivrEndpointID;
+	private String bridgeEndpointID;
+	private String conferenceEndpointID;
 
 	long lastGeneratedTransactionId = 0;
 	private Properties sessions = new Properties();
@@ -77,27 +80,60 @@ public class MGCPTransportLayer implements Base, ServerSocketAdapter {
 		return mediaServerAddress;
 	}
 
-	public MGCPTransportLayer setMediaServerAddress(InetAddress mediaServerAddress) {
+	public void setMediaServerAddress(InetAddress mediaServerAddress) {
 		this.mediaServerAddress = mediaServerAddress;
-		return this;
 	}
 
 	public int getMediaServerPort() {
 		return mediaServerPort;
 	}
 
-	public MGCPTransportLayer setMediaServerPort(int mediaServerPort) {
+	public void setMediaServerPort(int mediaServerPort) {
 		this.mediaServerPort = mediaServerPort;
-		return this;
 	}
 
-	public String getIvrEndpointID() {
-		return ivrEndpointID;
+	public String getMediaServerAddressWithPort() {
+		return mediaServerAddress.getHostAddress() + ":" + mediaServerPort;
 	}
 
-	public MGCPTransportLayer setIvrEndpointID(String ivrEndpointID) {
+	public String getEndpointID(Endpoint endpoint) {
+		if (NullUtil.isNull(endpoint)) {
+			return null;
+		}
+
+		String endpointName = null;
+
+		switch (endpoint) {
+		case IVR:
+			endpointName = ivrEndpointID;
+			break;
+		case CONFERENCE:
+			endpointName = conferenceEndpointID;
+			break;
+		case BRIDGE:
+			endpointName = bridgeEndpointID;
+			break;
+		default:
+			break;
+		}
+
+		if (NullUtil.isNull(endpointName)) {
+			error("Endpoint: " + endpoint + " is not configured");
+		}
+
+		return endpointName;
+	}
+
+	public void setIvrEndpointID(String ivrEndpointID) {
 		this.ivrEndpointID = ivrEndpointID;
-		return this;
+	}
+
+	public void setConferenceEndpointID(String conferenceEndpointID) {
+		this.conferenceEndpointID = conferenceEndpointID;
+	}
+
+	public void setBridgeEndpointID(String bridgeEndpointID) {
+		this.bridgeEndpointID = bridgeEndpointID;
 	}
 
 	public UdpServerSocket getServerSocket() {

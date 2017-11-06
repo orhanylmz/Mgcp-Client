@@ -1,15 +1,10 @@
 package com.mgcp.transport;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-
-import com.configuration.GeneralConfiguration;
 import com.mgcp.eventpackages.au.AdvancedAudioPackage;
 import com.mgcp.eventpackages.au.signal.PlayCollect;
 import com.mgcp.eventpackages.parameters.InitialPrompt;
@@ -37,10 +32,11 @@ import com.mgcp.message.parameter.signalRequests.SignalRequestsParameterValue;
 import com.mgcp.message.response.MGCPResponse;
 import com.noyan.Base;
 import com.noyan.util.NullUtil;
-import com.noyan.util.log.Log;
+import com.noyan.util.RandomUtil;
 
 public class MgcpSession implements Base {
-	private long transactionId = -1;
+	// private long transactionId = -1;
+	private String CALLID;
 	private MGCPTalk mgcpTalk;
 
 	private ArrayList<MGCPTalk> talks = new ArrayList<>();
@@ -49,7 +45,7 @@ public class MgcpSession implements Base {
 
 	public MgcpSession(MgcpSessionInterface mgcpSessionInterface) throws Exception {
 		this.mgcpSessionInterface = mgcpSessionInterface;
-		this.transactionId = getMgcpTransportLayer().generateTransactionId();
+		this.CALLID = RandomUtil.generateHexDigit32();
 		getMgcpTransportLayer().addSession(this);
 	}
 
@@ -79,10 +75,10 @@ public class MgcpSession implements Base {
 				endpointName = EndpointName.parse(getMgcpTransportLayer().getEndpointID(endpoint) + "@" + getMgcpTransportLayer().getMediaServerAddressWithPort());
 			}
 
-			MGCPCommandLine commandLine = new MGCPCommandLine(MGCPVerb.CRCX, transactionId, endpointName);
+			MGCPCommandLine commandLine = new MGCPCommandLine(MGCPVerb.CRCX, getMgcpTransportLayer().generateTransactionId(), endpointName);
 
 			MGCPCommand commandCRCX = new MGCPCommand(commandLine);
-			commandCRCX.addParameter(CallIdParameterValue.generate());
+			commandCRCX.addParameter(CallIdParameterValue.generate(CALLID));
 			commandCRCX.addParameter(LocalConnectionOptionsParameterValue.generate(20, "PCMU", "PCMA"));
 			commandCRCX.addParameter(ConnectionModeParameterValue.generate(ConnectionModes.sendrecv));
 
@@ -177,20 +173,27 @@ public class MgcpSession implements Base {
 		}
 	}
 
-//	private MGCPCommand generateCommandFromSession(MGCPVerb verb) throws Exception {
-//		return generateCommandFromSession(verb, null);
-//	}
+	public void destroySession() throws Exception {
+		MGCPTransportLayer.getMgcpTransportLayer().removeSession(this);
+	}
+
+	// private MGCPCommand generateCommandFromSession(MGCPVerb verb) throws
+	// Exception {
+	// return generateCommandFromSession(verb, null);
+	// }
 
 	private MGCPCommand generateCommandFromSession(MGCPVerb verb) throws Exception {
-//		if (NullUtil.isNull(endpointName)) {
-//			endpointName = EndpointName.parse(getSpecificEndpointId().getParameterValue().getValue().toString() + ":" + getMgcpTransportLayer().getMediaServerPort());
-//		}
-		MGCPCommandLine commandLine = new MGCPCommandLine(verb, getTransactionId(), getSpecificEndpointName());
+		// if (NullUtil.isNull(endpointName)) {
+		// endpointName =
+		// EndpointName.parse(getSpecificEndpointId().getParameterValue().getValue().toString()
+		// + ":" + getMgcpTransportLayer().getMediaServerPort());
+		// }
+		MGCPCommandLine commandLine = new MGCPCommandLine(verb, getMgcpTransportLayer().generateTransactionId(), getSpecificEndpointName());
 
 		MGCPCommand command = new MGCPCommand(commandLine);
-		command.addParameter(getSpecificEndpointId());
-		command.addParameter(getCallId());
-		command.addParameter(getConnectionId());
+		command.addParameter(getSpecificEndpointIdParameter());
+		command.addParameter(getCallIdParameter());
+		command.addParameter(getConnectionIdParameter());
 		return command;
 	}
 
@@ -202,6 +205,7 @@ public class MgcpSession implements Base {
 		mgcpTalk = new MGCPTalk(mgcpCommand);
 
 		getMgcpTransportLayer().send(mgcpCommand);
+		getMgcpTransportLayer().addSessionFromTransaction(mgcpCommand.getCommandLine().getTransactionId(), this);
 		fatal(mgcpCommand);
 	}
 
@@ -217,6 +221,7 @@ public class MgcpSession implements Base {
 		mgcpTalk = null;
 
 		info("Code detail: " + getMgcpTransportLayer().getResponseCodeDetail(mgcpResponse.getResponseLine().getResponseCode()));
+		MGCPTransportLayer.getMgcpTransportLayer().removeSessionFromTransaction(mgcpResponse.getResponseLine().getTransactionId());
 		mgcpSessionInterface.processReceiveMessage(mgcpResponse, verb);
 		fatal(mgcpResponse);
 	}
@@ -225,24 +230,28 @@ public class MgcpSession implements Base {
 		return talks;
 	}
 
-	public long getTransactionId() {
-		return transactionId;
-	}
+	// public long getTransactionId() {
+	// return transactionId;
+	// }
 
-	public MGCPParameter getCallId() throws MGCPParseException {
+	public MGCPParameter getCallIdParameter() throws MGCPParseException {
 		return getParameter(MgcpParametersEnum.CallId);
 	}
 
-	public MGCPParameter getSpecificEndpointId() throws MGCPParseException {
+	public MGCPParameter getSpecificEndpointIdParameter() throws MGCPParseException {
 		return getParameter(MgcpParametersEnum.SpecificEndpointId);
 	}
 
-	public EndpointName getSpecificEndpointName() throws MGCPParseException {
-		return (EndpointName) getSpecificEndpointId().getParameterValue().getValue();
+	public MGCPParameter getConnectionIdParameter() throws MGCPParseException {
+		return getParameter(MgcpParametersEnum.ConnectionId);
 	}
 
-	public MGCPParameter getConnectionId() throws MGCPParseException {
-		return getParameter(MgcpParametersEnum.ConnectionId);
+	public EndpointName getSpecificEndpointName() throws MGCPParseException {
+		return (EndpointName) getSpecificEndpointIdParameter().getParameterValue().getValue();
+	}
+
+	public String getCallId() {
+		return CALLID;
 	}
 
 	private MGCPParameter getParameter(MgcpParametersEnum mgcpParametersEnum) throws MGCPParseException {
@@ -268,7 +277,7 @@ public class MgcpSession implements Base {
 
 	@Override
 	public String getPrefix() {
-		return "MgcpSession [TransactionId:" + getTransactionId() + "] -> ";
+		return "MgcpSession [CALLID:" + CALLID + "] -> ";
 	}
 
 	@Override
@@ -279,62 +288,5 @@ public class MgcpSession implements Base {
 		}
 
 		return builder.toString();
-	}
-
-	public static void main(String[] args) throws Exception {
-		Logger.getRootLogger().setLevel(Level.FATAL);
-		Logger.getRootLogger().addAppender(Log.createConsoleAppender(null));
-
-		MGCPTransportLayer.createAndStartMgcpTransportLayer(GeneralConfiguration.localPort);
-
-		MGCPTransportLayer.getMgcpTransportLayer().setMediaServerAddress(InetAddress.getByName(GeneralConfiguration.mediaServerAddress));
-		MGCPTransportLayer.getMgcpTransportLayer().setMediaServerPort(GeneralConfiguration.mediaServerPort);
-		MGCPTransportLayer.getMgcpTransportLayer().setIvrEndpointID(GeneralConfiguration.ivrEndpointID);
-		MGCPTransportLayer.getMgcpTransportLayer().setConferenceEndpointID(GeneralConfiguration.conferenceEndpointID);
-		MGCPTransportLayer.getMgcpTransportLayer().setBridgeEndpointID(GeneralConfiguration.bridgeEndpointID);
-
-		MgcpSessionInterface mgcpSessionInterface = new MgcpSessionInterface() {
-			@Override
-			public void processException(Exception exception) {
-				exception.printStackTrace();
-			}
-
-			@Override
-			public void onSuccess(MGCPResponse mgcpResponse, MGCPVerb verb) {
-				System.out.println(verb + " SUCCESS");
-			}
-
-			@Override
-			public void onError(MGCPResponse mgcpResponse, MGCPVerb verb) {
-				System.out.println(verb + " ERROR");
-
-			}
-		};
-
-		MgcpSession mgcpSession = new MgcpSession(mgcpSessionInterface);
-
-		// mgcpSession.create(GeneralConfiguration.remoteSDP, Endpoint.BRIDGE);
-		mgcpSession.createBRIDGE(GeneralConfiguration.remoteSDP);
-		Thread.sleep(5000);
-		EndpointName endpointName = mgcpSession.getSpecificEndpointName();
-
-		MgcpSession mgcpSession2 = new MgcpSession(mgcpSessionInterface);
-		mgcpSession2.createBRIDGEwithEndpointName(endpointName);
-		// System.out.println("#####" +
-		// mgcpSession.getTalks().get(0).getMgcpResponse().getSpecificEndpointId().getValue().toString()
-		// + "#####");
-		Thread.sleep(5000);
-		mgcpSession2.modify(GeneralConfiguration.remoteSDP2);
-		Thread.sleep(5000);
-
-		// mgcpSession.delete();
-		// mgcpSession.modify();
-		// Thread.sleep(5000);
-		// mgcpSession.request("C:\\temp\\b.wav,it=1");
-		// mgcpSession.request("C:\\temp\\b.wav");
-		// mgcpSession.request("C:\\temp\\b.wav", "C:\\temp\\d.wav",
-		// "C:\\temp\\c.wav");
-		// Thread.sleep(5000);
-		// mgcpSession.delete();
 	}
 }

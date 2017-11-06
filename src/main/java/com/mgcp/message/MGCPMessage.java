@@ -42,9 +42,33 @@ public abstract class MGCPMessage {
 	}
 
 	public enum MgcpParametersEnum {
-		ResponseAck("K"), BearerInformation("B"), CallId("C"), ConnectionId("I"), NotifiedEntity("N"), RequestIdentifier("X"), LocalConnectionOptions("L"), ConnectionMode("M"), RwequestedEvents("R"), SignalRequests("S"), DigitMap("D"), ObservedEvents("O"), ConnectionParameters("P"), ReasonCode(
-				"E"), SpecificEndpointId(
-						"Z"), SecondEndpointId("Z2"), SecondConnectionId("I2"), RequestedInfo("F"), QuarantineHandling("Q"), DetectEvents("T"), RestartMethod("RM"), RestartDelay("RD"), Capabilities("A"), EventStates("ES"), PackageList("PL"), MaxMGCPDatagram("MD"), ExtensionParameters("");
+		ResponseAck("K"), //
+		BearerInformation("B"), //
+		CallId("C"), //
+		ConnectionId("I"), //
+		NotifiedEntity("N"), //
+		RequestIdentifier("X"), //
+		LocalConnectionOptions("L"), //
+		ConnectionMode("M"), //
+		RwequestedEvents("R"), //
+		SignalRequests("S"), //
+		DigitMap("D"), //
+		ObservedEvents("O"), //
+		ConnectionParameters("P"), //
+		ReasonCode("E"), //
+		SpecificEndpointId("Z"), //
+		SecondEndpointId("Z2"), //
+		SecondConnectionId("I2"), //
+		RequestedInfo("F"), //
+		QuarantineHandling("Q"), //
+		DetectEvents("T"), //
+		RestartMethod("RM"), //
+		RestartDelay("RD"), //
+		Capabilities("A"), //
+		EventStates("ES"), //
+		PackageList("PL"), //
+		MaxMGCPDatagram("MD"), //
+		ExtensionParameters("");
 
 		String shortName;
 

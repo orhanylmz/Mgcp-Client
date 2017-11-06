@@ -26,6 +26,7 @@ public class MGCPTransportLayer implements Base, ServerSocketAdapter {
 
 	long lastGeneratedTransactionId = 0;
 	private Properties sessions = new Properties();
+	private Properties transactions = new Properties();
 
 	public MGCPTransportLayer(int localPort) throws Exception {
 		this(null, localPort);
@@ -36,8 +37,8 @@ public class MGCPTransportLayer implements Base, ServerSocketAdapter {
 		responseCodeDetails = new ResponseCodeDetails();
 	}
 
-	public MgcpSession getSession(long transactionId) {
-		return (MgcpSession) sessions.get(transactionId);
+	public MgcpSession getSession(String callId) {
+		return (MgcpSession) sessions.get(callId);
 	}
 
 	public void addSession(MgcpSession mgcpSession) {
@@ -46,7 +47,7 @@ public class MGCPTransportLayer implements Base, ServerSocketAdapter {
 		}
 
 		synchronized (sessions) {
-			sessions.put(mgcpSession.getTransactionId(), mgcpSession);
+			sessions.put(mgcpSession.getCallId(), mgcpSession);
 		}
 	}
 
@@ -56,7 +57,27 @@ public class MGCPTransportLayer implements Base, ServerSocketAdapter {
 		}
 
 		synchronized (sessions) {
-			sessions.remove(mgcpSession.getTransactionId());
+			sessions.remove(mgcpSession.getCallId());
+		}
+	}
+
+	public MgcpSession getSessionFromTransaction(long transactionId) {
+		return (MgcpSession) transactions.get(transactionId);
+	}
+
+	public void addSessionFromTransaction(long transactionId, MgcpSession mgcpSession) {
+		if (NullUtil.isNull(mgcpSession)) {
+			return;
+		}
+
+		synchronized (transactions) {
+			transactions.put(transactionId, mgcpSession);
+		}
+	}
+
+	public void removeSessionFromTransaction(long transactionId) {
+		synchronized (transactions) {
+			transactions.remove(transactionId);
 		}
 	}
 
@@ -165,7 +186,7 @@ public class MGCPTransportLayer implements Base, ServerSocketAdapter {
 		return mgcpTransportLayer;
 	}
 
-	public long generateTransactionId() {
+	public synchronized long generateTransactionId() {
 		lastGeneratedTransactionId += 1;
 		if (lastGeneratedTransactionId > GeneralConfiguration.maxTransactionId) {
 			lastGeneratedTransactionId = 1;

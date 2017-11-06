@@ -4,7 +4,7 @@ import com.mgcp.message.response.MGCPResponse;
 import com.noyan.Base;
 import com.noyan.util.NullUtil;
 
-public class SessionFounder extends Thread implements Base{
+public class SessionFounder extends Thread implements Base {
 	private String message;
 
 	public SessionFounder(byte[] receiveData, MGCPTransportLayer mgcpTransportLayer) {
@@ -18,7 +18,7 @@ public class SessionFounder extends Thread implements Base{
 
 			int transactionId = mgcpResponse.getResponseLine().getTransactionId();
 
-			MgcpSession session = (MgcpSession) MGCPTransportLayer.getMgcpTransportLayer().getSession(transactionId);
+			MgcpSession session = (MgcpSession) MGCPTransportLayer.getMgcpTransportLayer().getSessionFromTransaction(transactionId);
 			if (NullUtil.isNull(session)) {
 				throw new Exception("Session not found for transactionId: " + transactionId);
 			}
@@ -26,7 +26,7 @@ public class SessionFounder extends Thread implements Base{
 			session.receive(mgcpResponse);
 		} catch (Exception e) {
 		}
-		
+
 	}
 
 	@Override
